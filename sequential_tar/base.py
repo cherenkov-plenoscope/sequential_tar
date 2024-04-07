@@ -41,11 +41,16 @@ def tarf_write(tarf, filename, payload, mode="wt"):
     else:
         payload_bytes = payload_raw
 
+    TAR_BLOCK_SIZE = 512
+    SIZE_WRITTEN = TAR_BLOCK_SIZE
+
     with io.BytesIO() as buff:
         tarinfo = tarfile.TarInfo(filename)
         tarinfo.size = buff.write(payload_bytes)
+        SIZE_WRITTEN += tarinfo.size
         buff.seek(0)
         tarf.addfile(tarinfo, buff)
+    return SIZE_WRITTEN
 
 
 class TarItem:
@@ -58,7 +63,7 @@ class TarItem:
         assert not "w" in mode
 
         if "|gz" in mode:
-            payload = gzip.compress(self.raw)
+            payload = gzip.decompress(self.raw)
         else:
             payload = self.raw
 
@@ -79,7 +84,7 @@ class SequentialTarWriter:
         self.tarf = tarfile.open(name=self.path, mode=mode)
 
     def write(self, filename=None, payload=None, mode="wb"):
-        tarf_write(
+        return tarf_write(
             tarf=self.tarf,
             filename=filename,
             payload=payload,

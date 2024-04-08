@@ -1,9 +1,9 @@
-import tarfile
+import tarfile as buildin_tarfile
 import io
 import gzip
 
 
-def open(path, mode="r"):
+def open(name=None, mode="r", fileobj=None):
     """
     Read or write tar files in a sequential way without seeking.
 
@@ -20,15 +20,16 @@ def open(path, mode="r"):
     reader/writer : Reader/Writer
         Depending on mode.
     """
-    if "r" in mode:
-        return SequentialTarReader(path=path, mode=mode)
-    elif "w" in mode:
-        return SequentialTarWriter(path=path, mode=mode)
+    tarfile = buildin_tarfile.open(name=name, mode=mode, fileobj=fileobj)
+    if "r" in tarfile.mode:
+        return SequentialTarReader(tarfile=tarfile)
+    elif "w" in tarfile.mode:
+        return SequentialTarWriter(tarfile=tarfile)
     else:
         raise ValueError("mode must either contain 'r' or 'w'.")
 
 
-def tarf_write(tarf, name, payload, mode="wt"):
+def tarfile_add_regular_file(tarfile, name, payload, mode="wt"):
     if "b" in mode:
         payload_raw = payload
     elif "t" in mode:
@@ -45,15 +46,15 @@ def tarf_write(tarf, name, payload, mode="wt"):
     SIZE_WRITTEN = TAR_BLOCK_SIZE
 
     with io.BytesIO() as buff:
-        tarinfo = tarfile.TarInfo(name)
+        tarinfo = buildin_tarfile.TarInfo(name)
         tarinfo.size = buff.write(payload_bytes)
         SIZE_WRITTEN += tarinfo.size
         buff.seek(0)
-        tarf.addfile(tarinfo, buff)
+        tarfile.addfile(tarinfo, buff)
     return SIZE_WRITTEN
 
 
-class TarItem:
+class SequentialTarItem:
     def __init__(self, tarinfo, raw):
         self.tarinfo = tarinfo
         self.name = self.tarinfo.name
@@ -77,23 +78,24 @@ class TarItem:
 
         return out
 
+    def __repr__(self):
+        return "{:s}(name='{:s}')".format(self.__class__.__name__, self.name)
+
 
 class SequentialTarWriter:
-    def __init__(self, path, mode):
-        self.path = path
-        self.mode = mode
-        self.tarf = tarfile.open(name=self.path, mode=mode)
+    def __init__(self, tarfile):
+        self.tarfile = tarfile
 
     def write(self, name, payload, mode="wt"):
-        return tarf_write(
-            tarf=self.tarf,
+        return tarfile_add_regular_file(
+            tarfile=self.tarfile,
             name=name,
             payload=payload,
             mode=mode,
         )
 
     def close(self):
-        self.tarf.close()
+        self.tarfile.close()
 
     def __enter__(self):
         return self
@@ -102,36 +104,33 @@ class SequentialTarWriter:
         self.close()
 
     def __repr__(self):
-        out = "{:s}(path='{:s}', mode='{:s}')".format(
-            self.__class__.__name__, self.path.path, self.mode
+        return "{:s}(tarfile='{:s}')".format(
+            self.__class__.__name__, repr(self.tarfile)
         )
-        return out
 
 
 class SequentialTarReader:
-    def __init__(self, path, mode):
-        self.path = path
-        self.mode = mode
-        self.tarf = tarfile.open(name=self.path, mode=mode)
+    def __init__(self, tarfile):
+        self.tarfile = tarfile
 
     def next(self):
         return self.__next__()
 
     def __next__(self):
         while True:
-            tarinfo = self.tarf.next()
+            tarinfo = self.tarfile.next()
             if tarinfo is None:
                 raise StopIteration
             if tarinfo.isfile():
                 break
-        raw = self.tarf.extractfile(tarinfo).read()
-        return TarItem(tarinfo=tarinfo, raw=raw)
+        raw = self.tarfile.extractfile(tarinfo).read()
+        return SequentialTarItem(tarinfo=tarinfo, raw=raw)
 
     def __iter__(self):
         return self
 
     def close(self):
-        self.tarf.close()
+        self.tarfile.close()
 
     def __enter__(self):
         return self
@@ -140,7 +139,6 @@ class SequentialTarReader:
         self.close()
 
     def __repr__(self):
-        out = "{:s}(path='{:s}', mode='{:s}')".format(
-            self.__class__.__name__, self.path.path, self.mode
+        return "{:s}(tarfile='{:s}')".format(
+            self.__class__.__name__, repr(self.tarfile)
         )
-        return out

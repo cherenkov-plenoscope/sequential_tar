@@ -7,9 +7,9 @@ def test_context():
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "test.tar")
 
-        with seqtar.open(path, "w") as ts:
+        with seqtar.open(path, "w") as tar:
             for i in range(100):
-                ts.write(
+                tar.write(
                     name="{:06d}.txt".format(i),
                     payload="I am file number {:d}.".format(i),
                     mode="wt",

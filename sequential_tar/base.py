@@ -3,7 +3,7 @@ import io
 import gzip
 
 
-def open(path, mode):
+def open(path, mode="r"):
     """
     Read or write tar files in a sequential way without seeking.
 
@@ -28,7 +28,7 @@ def open(path, mode):
         raise ValueError("mode must either contain 'r' or 'w'.")
 
 
-def tarf_write(tarf, filename, payload, mode="wt"):
+def tarf_write(tarf, name, payload, mode="wt"):
     if "b" in mode:
         payload_raw = payload
     elif "t" in mode:
@@ -45,7 +45,7 @@ def tarf_write(tarf, filename, payload, mode="wt"):
     SIZE_WRITTEN = TAR_BLOCK_SIZE
 
     with io.BytesIO() as buff:
-        tarinfo = tarfile.TarInfo(filename)
+        tarinfo = tarfile.TarInfo(name)
         tarinfo.size = buff.write(payload_bytes)
         SIZE_WRITTEN += tarinfo.size
         buff.seek(0)
@@ -54,8 +54,9 @@ def tarf_write(tarf, filename, payload, mode="wt"):
 
 
 class TarItem:
-    def __init__(self, filename, raw):
-        self.filename = filename
+    def __init__(self, tarinfo, raw):
+        self.tarinfo = tarinfo
+        self.name = self.tarinfo.name
         self.raw = raw
 
     def read(self, mode="rt"):
@@ -83,10 +84,10 @@ class SequentialTarWriter:
         self.mode = mode
         self.tarf = tarfile.open(name=self.path, mode=mode)
 
-    def write(self, filename=None, payload=None, mode="wt"):
+    def write(self, name, payload, mode="wt"):
         return tarf_write(
             tarf=self.tarf,
-            filename=filename,
+            name=name,
             payload=payload,
             mode=mode,
         )
@@ -117,11 +118,14 @@ class SequentialTarReader:
         return self.__next__()
 
     def __next__(self):
-        tarinfo = self.tarf.next()
-        if tarinfo is None:
-            raise StopIteration
+        while True:
+            tarinfo = self.tarf.next()
+            if tarinfo is None:
+                raise StopIteration
+            if tarinfo.isfile():
+                break
         raw = self.tarf.extractfile(tarinfo).read()
-        return TarItem(filename=tarinfo.name, raw=raw)
+        return TarItem(tarinfo=tarinfo, raw=raw)
 
     def __iter__(self):
         return self

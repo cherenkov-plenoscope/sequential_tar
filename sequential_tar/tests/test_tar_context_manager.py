@@ -10,14 +10,14 @@ def test_context():
         with seqtar.open(path, "w") as ts:
             for i in range(100):
                 ts.write(
-                    filename="{:06d}.txt".format(i),
+                    name="{:06d}.txt".format(i),
                     payload="I am file number {:d}.".format(i),
                     mode="wt",
                 )
 
         with seqtar.open(path, "r") as tar:
             for i, item in enumerate(tar):
-                assert item.filename == "{:06d}.txt".format(i)
+                assert item.name == "{:06d}.txt".format(i)
 
         with seqtar.open(path, "r") as tar:
             for i in range(100):

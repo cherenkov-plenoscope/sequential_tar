@@ -3,7 +3,7 @@ import tempfile
 import os
 
 
-def test_context():
+def test_gzip_mode():
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "test.tar")
 

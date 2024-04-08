@@ -58,7 +58,7 @@ class TarItem:
         self.filename = filename
         self.raw = raw
 
-    def read(self, mode="rb"):
+    def read(self, mode="rt"):
         assert "r" in mode
         assert not "w" in mode
 
@@ -83,7 +83,7 @@ class SequentialTarWriter:
         self.mode = mode
         self.tarf = tarfile.open(name=self.path, mode=mode)
 
-    def write(self, filename=None, payload=None, mode="wb"):
+    def write(self, filename=None, payload=None, mode="wt"):
         return tarf_write(
             tarf=self.tarf,
             filename=filename,

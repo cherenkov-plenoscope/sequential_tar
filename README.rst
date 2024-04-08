@@ -14,11 +14,11 @@ creation of temporary files.
 
 modes
 -----
-When writing the next file to the tarfile, one can choose a ``mode`` to
-ease the differences of text ``"t"`` and binary ``"b"`` content. Further a
-compression can be applied in the mode by adding ``"|gz"``.
+When writing the next file to the tarfile, one can set the ``mode`` to
+choose either text ``"t"`` or binary ``"b"``. Further a
+compression can be applied by adding ``"|gz"`` to the ``mode``.
 In the same manner, a ``mode`` can be set when reading a file from the tarfile.
-This way possible decompression and text/binary conversions can be taken care of
+This way, possible decompression and text/binary conversions can be taken care of
 with just a few characters in the ``mode`` parameter.
 
 
